@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Django 애플리케이션이 있는 디렉토리로 이동
-WORKDIR /usr/src/app/graduation_machine
+WORKDIR /usr/src/app/giggle
 
 # 컨테이너 외부에서 접근할 수 있도록 포트 8000 노출
 EXPOSE 8000
