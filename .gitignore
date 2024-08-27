@@ -6,6 +6,10 @@ myenv/
 
 .idea/**
 
+giggle/giggle/__pycache__/
+giggle/chatbot/__pycache__/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
