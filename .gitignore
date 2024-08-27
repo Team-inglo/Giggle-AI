@@ -4,6 +4,9 @@
 myenv/
 .DS_STORE
 
+chatbot/.DS_STORE
+giggle/.DS_STORE
+
 .idea/**
 
 giggle/giggle/__pycache__/
