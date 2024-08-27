@@ -2,6 +2,7 @@
 /giggle/.env
 
 myenv/
+.DS_STORE
 
 .idea/**
 
