@@ -17,4 +17,4 @@ WORKDIR /usr/src/app/giggle
 # 컨테이너 외부에서 접근할 수 있도록 포트 8000 노출
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "giggle.wsgi:application"]
