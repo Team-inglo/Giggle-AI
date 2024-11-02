@@ -15,9 +15,20 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from operator import itemgetter
+from rest_framework.pagination import PageNumberPagination
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+class ChatMessagePagination(PageNumberPagination):
+    page_size = 10  # 한 페이지에 보여줄 메시지 개수
+    page_size_query_param = 'size'
+    max_page_size = 100
+
+    def get_page(self, request):
+        # 요청된 page에서 1을 뺀 페이지 번호를 반환
+        page = int(request.query_params.get("page", 1)) - 1
+        return max(page, 1)  # 0 이하의 값이 되지 않도록 제한
 
 class ChatBotService():
     def __init__(self):
@@ -33,6 +44,8 @@ class ChatBotService():
 
         만약 질문의 답을 알지 못한다면, 모른다고 답해야 합니다.
         모든 답변은 한국어를 사용하여 공식적인 어투로 답해야 합니다.
+        모든 답변에는 볼드체 처리를 위한 특수문자가 들어가있으면 안됩니다. 
+        모든 답변에는 넘버링 및 제목이나 부제목이 들어가있으면 안되고, 문장들로 답해야합니다.
 
         관련해서 번호를 물어볼 경우 혹은, 대답하기 애매한 경우에만 1345(국번없이)로 전화해야한다고 알려주세요.
 
@@ -72,25 +85,32 @@ class ChatBotService():
         if not user_id:
             raise AuthenticationFailed('Invalid token')
         # 메시지 목록을 리스트로 변환
-        messages = ChatMessage.objects.filter(user_id=user_id).order_by('timestamp')
+        messages = ChatMessage.objects.filter(user_id=user_id).order_by('-timestamp')
 
         if not messages:
             # 초기 메시지 설정
             self.save_message(user_id, "assistant", "안녕하세요. 무엇을 도와드릴까요?")
             messages = ChatMessage.objects.filter(user_id=user_id).order_by('timestamp')
 
-        # 직렬화 가능하도록 변환
-        messages_dict = []
-        for message in messages:
-            message_dict = {
-                'user_id': message.user_id,
-                'role': message.role,
-                'message': message.message,
-                'timestamp': message.timestamp
-            }
-            messages_dict.append(message_dict)
+        paginator = ChatMessagePagination()
+        requested_page = paginator.get_page(request)
+        paginated_messages = paginator.paginate_queryset(messages, request, view=requested_page)
 
-        return messages_dict
+        # 직렬화 가능하도록 변환
+        messages_dict = [
+            {
+                "user_id": message.user_id,
+                "role": message.role,
+                "message": message.message,
+                "timestamp": message.timestamp.isoformat()
+            }
+            for message in paginated_messages
+        ]
+
+        return {
+            "messages": messages_dict,
+            "has_next": paginator.page.has_next()
+        }
 
     def get_user_history(self, user_id):
 
